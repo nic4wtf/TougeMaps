@@ -712,9 +712,15 @@ button {
 }
 
 .track-inline-detail__rating,
+.track-inline-detail__map,
 .track-inline-detail__hazards {
   display: grid;
   gap: 10px;
+}
+
+.track-inline-detail__map-frame {
+  margin-top: 0;
+  height: 220px;
 }
 
 @media (min-width: 920px) {

@@ -324,7 +324,7 @@ const tracks = [
   },
 ];
 
-const CURRENT_VERSION = "0.3.3";
+const CURRENT_VERSION = "0.3.4";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
@@ -670,6 +670,19 @@ function buildMobileTrackDetails(track) {
     <div class="track-inline-detail__tags">${track.tags
       .map((tag) => `<span class="tag">${tag}</span>`)
       .join("")}</div>
+    <section class="track-inline-detail__map">
+      <div class="subpanel__header">
+        <h3>Mini map</h3>
+        <a href="${buildGoogleMapsLink(track)}" target="_blank" rel="noreferrer">Open larger map</a>
+      </div>
+      <iframe
+        class="map-frame track-inline-detail__map-frame"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        title="${escapeAttribute(track.name)} mobile map preview"
+        src="${buildEmbedMapLink(track.startPoint.latitude, track.startPoint.longitude)}"
+      ></iframe>
+    </section>
     <div class="track-inline-detail__actions">
       <button class="button ${isDone ? "button--complete" : "button--primary"}" data-action="done">${isDone ? "Mark as not done" : "Mark as done"}</button>
       <button class="button button--secondary" data-action="google">Google Maps</button>
@@ -1073,6 +1086,10 @@ function escapeXml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
+}
+
+function escapeAttribute(value) {
+  return escapeXml(value);
 }
 
 function isMobileLayout() {
