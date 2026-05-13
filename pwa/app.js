@@ -324,7 +324,7 @@ const tracks = [
   },
 ];
 
-const CURRENT_VERSION = "0.3.4";
+const CURRENT_VERSION = "0.3.5";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
@@ -826,12 +826,7 @@ async function checkForUpdates() {
 
     setUpdateButtonState("available", remoteVersion);
 
-    if (swRegistration) {
-      await applyServiceWorkerUpdate(swRegistration);
-      return;
-    }
-
-    reloadWithCacheBust();
+    await forceRefreshToVersion(remoteVersion);
   } catch (error) {
     console.error("Update check failed", error);
     setUpdateButtonState("error");
@@ -843,54 +838,37 @@ async function checkForUpdates() {
   }
 }
 
-async function applyServiceWorkerUpdate(registration) {
-  setUpdateButtonState("applying");
-  await registration.update();
+async function forceRefreshToVersion(remoteVersion) {
+  setUpdateButtonState("refreshing", remoteVersion);
 
-  if (registration.waiting) {
-    registration.waiting.postMessage({ type: "SKIP_WAITING" });
-    return;
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+
+    await Promise.all(
+      registrations.map(async (registration) => {
+        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+        registration.installing?.postMessage?.({ type: "SKIP_WAITING" });
+        await registration.unregister();
+      }),
+    );
   }
 
-  if (registration.installing) {
-    await waitForWorkerState(registration.installing);
-
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: "SKIP_WAITING" });
-      return;
-    }
+  if ("caches" in window) {
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)));
   }
 
-  reloadWithCacheBust();
+  reloadWithCacheBust(remoteVersion);
 }
 
-function waitForWorkerState(worker) {
-  return new Promise((resolve, reject) => {
-    const handleStateChange = () => {
-      if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
-        worker.removeEventListener("statechange", handleStateChange);
-        resolve();
-      }
-    };
-
-    worker.addEventListener("statechange", handleStateChange);
-    handleStateChange();
-
-    window.setTimeout(() => {
-      worker.removeEventListener("statechange", handleStateChange);
-      reject(new Error("Timed out waiting for service worker update"));
-    }, 12000);
-  });
-}
-
-function reloadWithCacheBust() {
+function reloadWithCacheBust(targetVersion = CURRENT_VERSION) {
   if (isReloadingForUpdate) {
     return;
   }
 
   isReloadingForUpdate = true;
   const refreshedUrl = new URL(window.location.href);
-  refreshedUrl.searchParams.set("updated", Date.now().toString());
+  refreshedUrl.searchParams.set("updated", `${targetVersion}-${Date.now()}`);
   window.location.replace(refreshedUrl.toString());
 }
 
@@ -918,6 +896,12 @@ function setUpdateButtonState(state, remoteVersion = "") {
   if (state === "applying") {
     elements.updateButtonLabel.textContent = "Applying update";
     elements.updateButtonMeta.textContent = "Installing new version now";
+    return;
+  }
+
+  if (state === "refreshing") {
+    elements.updateButtonLabel.textContent = "Refreshing app";
+    elements.updateButtonMeta.textContent = `Loading v${remoteVersion}`;
     return;
   }
 

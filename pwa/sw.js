@@ -1,4 +1,4 @@
-const CACHE_NAME = "tougemaps-pwa-v0.3.4";
+const CACHE_NAME = "tougemaps-pwa-v0.3.5";
 const APP_ASSETS = [
   "./",
   "./index.html",
