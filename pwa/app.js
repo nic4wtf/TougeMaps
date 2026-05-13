@@ -324,11 +324,13 @@ const tracks = [
   },
 ];
 
+const CURRENT_VERSION = "0.3.0";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
 let installPrompt = null;
 let userLocation = null;
+let swRegistration = null;
 const sydneyReference = {
   name: "Sydney",
   latitude: -33.8688,
@@ -339,10 +341,12 @@ const elements = {
   routeCount: document.getElementById("routeCount"),
   doneCount: document.getElementById("doneCount"),
   avgRating: document.getElementById("avgRating"),
+  appVersion: document.getElementById("appVersion"),
   distanceStatLabel: document.getElementById("distanceStatLabel"),
   selectionBadge: document.getElementById("selectionBadge"),
   locationStatus: document.getElementById("locationStatus"),
   locationButton: document.getElementById("locationButton"),
+  updateButton: document.getElementById("updateButton"),
   searchInput: document.getElementById("searchInput"),
   trackList: document.getElementById("trackList"),
   detailBody: document.getElementById("detailBody"),
@@ -372,6 +376,7 @@ const elements = {
 init();
 
 function init() {
+  elements.appVersion.textContent = `v${CURRENT_VERSION}`;
   wireEvents();
   render();
   registerServiceWorker();
@@ -381,6 +386,7 @@ function wireEvents() {
   elements.searchInput.addEventListener("input", renderTrackList);
   elements.locationButton.addEventListener("click", requestUserLocation);
   elements.markDoneButton.addEventListener("click", toggleDone);
+  elements.updateButton.addEventListener("click", checkForUpdates);
   elements.googleMapsButton.addEventListener("click", () => {
     const track = getSelectedTrack();
     openExternal(buildGoogleMapsLink(track));
@@ -461,6 +467,7 @@ function renderTrackList() {
     const fragment = elements.template.content.cloneNode(true);
     const card = fragment.querySelector(".track-card");
     const image = fragment.querySelector(".track-card__image");
+    const doneBadge = fragment.querySelector(".track-card__done-badge");
     const name = fragment.querySelector(".track-card__name");
     const rating = fragment.querySelector(".track-card__rating");
     const region = fragment.querySelector(".track-card__region");
@@ -472,6 +479,7 @@ function renderTrackList() {
     rating.textContent = `${track.rating.toFixed(1)} / 5`;
     region.textContent = track.region;
     meta.innerHTML = "";
+    doneBadge.hidden = !appState.done[track.id];
 
     [
       track.difficulty,
@@ -566,7 +574,11 @@ function renderRatingStars(track) {
     }
 
     button.addEventListener("click", () => {
-      appState.ratings[track.id] = rating;
+      if (appState.ratings[track.id] === rating) {
+        delete appState.ratings[track.id];
+      } else {
+        appState.ratings[track.id] = rating;
+      }
       saveState();
       renderOverview();
       renderRatingStars(track);
@@ -588,6 +600,7 @@ function renderHazards(track) {
 function renderDoneButton(track) {
   const isDone = Boolean(appState.done[track.id]);
   elements.markDoneButton.textContent = isDone ? "Mark as not done" : "Mark as done";
+  elements.markDoneButton.classList.toggle("button--complete", isDone);
 }
 
 function renderMap(track) {
@@ -664,6 +677,47 @@ async function installApp() {
 
   installPrompt = null;
   elements.installButton.hidden = true;
+}
+
+async function checkForUpdates() {
+  elements.updateButton.disabled = true;
+  const originalLabel = elements.updateButton.textContent;
+  elements.updateButton.textContent = "Checking...";
+
+  try {
+    const response = await fetch(`./version.json?ts=${Date.now()}`, {
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    const remoteVersion = payload.version;
+
+    if (remoteVersion === CURRENT_VERSION) {
+      elements.updateButton.textContent = "Already latest";
+      return;
+    }
+
+    elements.updateButton.textContent = `Update ${remoteVersion}`;
+
+    if (swRegistration) {
+      await swRegistration.update();
+
+      if (swRegistration.waiting) {
+        swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+        window.location.reload();
+        return;
+      }
+    }
+
+    window.location.reload();
+  } catch (error) {
+    console.error("Update check failed", error);
+    elements.updateButton.textContent = "Update check failed";
+  } finally {
+    window.setTimeout(() => {
+      elements.updateButton.disabled = false;
+      elements.updateButton.textContent = originalLabel;
+    }, 2200);
+  }
 }
 
 function requestUserLocation() {
@@ -855,7 +909,10 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js");
+    swRegistration = await navigator.serviceWorker.register("./sw.js");
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
   } catch (error) {
     console.error("Service worker registration failed", error);
   }

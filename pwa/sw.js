@@ -1,9 +1,10 @@
-const CACHE_NAME = "tougemaps-pwa-v1";
+const CACHE_NAME = "tougemaps-pwa-v0.3.0";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./version.json",
   "./manifest.webmanifest",
   "./assets/icon-road.svg",
   "./assets/akina-pass.svg",
@@ -27,6 +28,12 @@ self.addEventListener("activate", (event) => {
     ),
   );
   self.clients.claim();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {

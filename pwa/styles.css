@@ -101,11 +101,33 @@ button {
   letter-spacing: 0.03em;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .hero__copy h1 {
   margin: 0 0 12px;
   max-width: 12ch;
   font-size: clamp(3.4rem, 8vw, 6.8rem);
   line-height: 0.88;
+}
+
+.version-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  margin-top: 4px;
+  color: #f3d8ff;
+  border: 1px solid rgba(207, 140, 255, 0.28);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(112, 55, 144, 0.62), rgba(67, 27, 100, 0.72));
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .hero__lede {
@@ -344,6 +366,26 @@ button {
   border-radius: 14px;
 }
 
+.track-card__image-wrap {
+  position: relative;
+}
+
+.track-card__done-badge {
+  position: absolute;
+  inset: auto 8px 8px 8px;
+  display: inline-flex;
+  justify-content: center;
+  padding: 5px 8px;
+  color: #f3d8ff;
+  border: 1px solid rgba(207, 140, 255, 0.34);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(138, 67, 189, 0.88), rgba(87, 31, 129, 0.92));
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 22px rgba(64, 18, 106, 0.38);
+}
+
 .track-card__content {
   display: grid;
   gap: 6px;
@@ -491,6 +533,12 @@ button {
 
 .button--ghost {
   background: transparent;
+}
+
+.button--complete {
+  color: #f8e8ff;
+  background: linear-gradient(180deg, rgba(144, 79, 196, 0.96), rgba(98, 36, 148, 0.96));
+  border-color: rgba(207, 140, 255, 0.34);
 }
 
 .subpanel {

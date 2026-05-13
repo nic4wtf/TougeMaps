@@ -24,10 +24,16 @@
     <div class="app-shell">
       <header class="hero">
         <div class="hero__copy">
-          <h1>TougeMaps PWA</h1>
+          <div class="title-row">
+            <h1>TougeMaps PWA</h1>
+            <span id="appVersion" class="version-pill">v0.3.0</span>
+          </div>
           <div class="hero__actions">
             <button id="installButton" class="button button--primary" hidden>
               Install app
+            </button>
+            <button id="updateButton" class="button button--secondary" type="button">
+              Check for update
             </button>
             <button id="shareAppButton" class="button button--ghost">
               Share app
@@ -181,7 +187,10 @@
 
     <template id="trackCardTemplate">
       <button class="track-card" type="button">
-        <img class="track-card__image" alt="" />
+        <div class="track-card__image-wrap">
+          <img class="track-card__image" alt="" />
+          <span class="track-card__done-badge" aria-hidden="true">Complete</span>
+        </div>
         <div class="track-card__content">
           <div class="track-card__top">
             <strong class="track-card__name"></strong>
