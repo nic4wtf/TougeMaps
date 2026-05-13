@@ -23,6 +23,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   color: var(--text);
   font-family: "Barlow Condensed", "Segoe UI", sans-serif;
@@ -160,6 +164,7 @@ button {
 
 .hero__actions {
   margin-top: 18px;
+  align-items: stretch;
 }
 
 .hero__stats {
@@ -359,6 +364,11 @@ button {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
 
+.track-card.is-done {
+  border-color: rgba(193, 126, 255, 0.26);
+  box-shadow: 0 12px 32px rgba(74, 24, 120, 0.18);
+}
+
 .track-card__image {
   width: 96px;
   height: 96px;
@@ -368,6 +378,16 @@ button {
 
 .track-card__image-wrap {
   position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.track-card__image-wrap.is-done::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(157, 86, 215, 0.12), rgba(92, 31, 140, 0.36));
+  pointer-events: none;
 }
 
 .track-card__done-badge {
@@ -533,6 +553,55 @@ button {
 
 .button--ghost {
   background: transparent;
+}
+
+.button--update {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 208px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(116, 47, 34, 0.92), rgba(58, 22, 17, 0.96));
+}
+
+.update-button__dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #d29bff;
+  box-shadow: 0 0 0 6px rgba(185, 111, 236, 0.12);
+}
+
+.update-button__copy {
+  display: grid;
+  gap: 2px;
+}
+
+.update-button__label {
+  font-weight: 600;
+  line-height: 1;
+}
+
+.update-button__meta {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.1;
+}
+
+.button--update[data-state="checking"] .update-button__dot {
+  background: #ffb08d;
+  box-shadow: 0 0 0 6px rgba(241, 95, 42, 0.12);
+}
+
+.button--update[data-state="available"] .update-button__dot {
+  background: #8df0bf;
+  box-shadow: 0 0 0 6px rgba(86, 219, 148, 0.12);
+}
+
+.button--update[data-state="error"] .update-button__dot {
+  background: #ff8f8f;
+  box-shadow: 0 0 0 6px rgba(255, 111, 111, 0.12);
 }
 
 .button--complete {

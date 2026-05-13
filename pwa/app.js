@@ -324,7 +324,7 @@ const tracks = [
   },
 ];
 
-const CURRENT_VERSION = "0.3.0";
+const CURRENT_VERSION = "0.3.1";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
@@ -342,6 +342,8 @@ const elements = {
   doneCount: document.getElementById("doneCount"),
   avgRating: document.getElementById("avgRating"),
   appVersion: document.getElementById("appVersion"),
+  updateButtonLabel: document.getElementById("updateButtonLabel"),
+  updateButtonMeta: document.getElementById("updateButtonMeta"),
   distanceStatLabel: document.getElementById("distanceStatLabel"),
   selectionBadge: document.getElementById("selectionBadge"),
   locationStatus: document.getElementById("locationStatus"),
@@ -377,6 +379,7 @@ init();
 
 function init() {
   elements.appVersion.textContent = `v${CURRENT_VERSION}`;
+  setUpdateButtonState("idle");
   wireEvents();
   render();
   registerServiceWorker();
@@ -467,6 +470,7 @@ function renderTrackList() {
     const fragment = elements.template.content.cloneNode(true);
     const card = fragment.querySelector(".track-card");
     const image = fragment.querySelector(".track-card__image");
+    const imageWrap = fragment.querySelector(".track-card__image-wrap");
     const doneBadge = fragment.querySelector(".track-card__done-badge");
     const name = fragment.querySelector(".track-card__name");
     const rating = fragment.querySelector(".track-card__rating");
@@ -479,13 +483,16 @@ function renderTrackList() {
     rating.textContent = `${track.rating.toFixed(1)} / 5`;
     region.textContent = track.region;
     meta.innerHTML = "";
-    doneBadge.hidden = !appState.done[track.id];
+    const isDone = Boolean(appState.done[track.id]);
+    doneBadge.hidden = !isDone;
+    card.classList.toggle("is-done", isDone);
+    imageWrap.classList.toggle("is-done", isDone);
 
     [
       track.difficulty,
       `${track.lengthKm} km route`,
       getDistanceLabel(track),
-      appState.done[track.id] ? "Done" : "Not done",
+      isDone ? "Done" : "Not done",
     ].forEach((label) => {
       const pill = document.createElement("span");
       pill.className = "tag";
@@ -681,8 +688,7 @@ async function installApp() {
 
 async function checkForUpdates() {
   elements.updateButton.disabled = true;
-  const originalLabel = elements.updateButton.textContent;
-  elements.updateButton.textContent = "Checking...";
+  setUpdateButtonState("checking");
 
   try {
     const response = await fetch(`./version.json?ts=${Date.now()}`, {
@@ -692,11 +698,11 @@ async function checkForUpdates() {
     const remoteVersion = payload.version;
 
     if (remoteVersion === CURRENT_VERSION) {
-      elements.updateButton.textContent = "Already latest";
+      setUpdateButtonState("latest");
       return;
     }
 
-    elements.updateButton.textContent = `Update ${remoteVersion}`;
+    setUpdateButtonState("available", remoteVersion);
 
     if (swRegistration) {
       await swRegistration.update();
@@ -711,13 +717,44 @@ async function checkForUpdates() {
     window.location.reload();
   } catch (error) {
     console.error("Update check failed", error);
-    elements.updateButton.textContent = "Update check failed";
+    setUpdateButtonState("error");
   } finally {
     window.setTimeout(() => {
       elements.updateButton.disabled = false;
-      elements.updateButton.textContent = originalLabel;
+      setUpdateButtonState("idle");
     }, 2200);
   }
+}
+
+function setUpdateButtonState(state, remoteVersion = "") {
+  elements.updateButton.dataset.state = state;
+
+  if (state === "checking") {
+    elements.updateButtonLabel.textContent = "Checking for update";
+    elements.updateButtonMeta.textContent = `Installed: v${CURRENT_VERSION}`;
+    return;
+  }
+
+  if (state === "latest") {
+    elements.updateButtonLabel.textContent = "App is current";
+    elements.updateButtonMeta.textContent = `You have v${CURRENT_VERSION}`;
+    return;
+  }
+
+  if (state === "available") {
+    elements.updateButtonLabel.textContent = "Update available";
+    elements.updateButtonMeta.textContent = `New version: v${remoteVersion}`;
+    return;
+  }
+
+  if (state === "error") {
+    elements.updateButtonLabel.textContent = "Update check failed";
+    elements.updateButtonMeta.textContent = "Try again in a moment";
+    return;
+  }
+
+  elements.updateButtonLabel.textContent = "Check for update";
+  elements.updateButtonMeta.textContent = `v${CURRENT_VERSION} installed`;
 }
 
 function requestUserLocation() {
