@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs>
+    <linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f5d52"/>
+      <stop offset="1" stop-color="#b1b982"/>
+    </linearGradient>
+    <linearGradient id="road3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2124"/>
+      <stop offset="1" stop-color="#4c4e54"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#sky3)"/>
+  <path d="M0 350c120-49 257-36 405 35s263 85 399 34 247-144 396-155v456H0z" fill="#294233"/>
+  <path d="M0 523c159-41 285-10 438 53s274 89 392 58 201-94 370-80v166H0z" fill="#1b2d22"/>
+  <path d="M521 720c-13-53-20-103-5-144 18-50 66-76 111-103 55-34 107-76 124-150 11-48 8-95 0-141h86c5 56 0 125-25 185-34 81-98 131-158 171-42 28-69 49-79 88-7 28-7 58 6 94z" fill="url(#road3)"/>
+  <path d="M772 235c3 31 2 68-7 104-15 62-53 99-98 130-52 36-109 68-132 136-11 31-11 68-3 115" fill="none" stroke="#f1eccd" stroke-width="8" stroke-dasharray="20 16"/>
+  <path d="M204 188c94 16 166 69 209 145" fill="none" stroke="#ffffff" stroke-width="5" opacity=".42"/>
+</svg>

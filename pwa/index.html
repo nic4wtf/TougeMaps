@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="TougeMaps PWA for browsing roads, opening navigation, tracking done status, and sharing with friends."
+    />
+    <meta name="theme-color" content="#7f2616" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icon-road.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/icon-road.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>TougeMaps PWA</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero__copy">
+          <h1>TougeMaps PWA</h1>
+          <div class="hero__actions">
+            <button id="installButton" class="button button--primary" hidden>
+              Install app
+            </button>
+            <button id="shareAppButton" class="button button--ghost">
+              Share app
+            </button>
+          </div>
+        </div>
+        <div class="hero__stats">
+          <div class="stat-card">
+            <span class="stat-card__label">Routes</span>
+            <strong id="routeCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__label">Marked done</span>
+            <strong id="doneCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span id="distanceStatLabel" class="stat-card__label">Closest route</span>
+            <strong id="avgRating">0.0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <section class="panel panel--filters">
+            <div class="panel__header">
+              <h2>Routes</h2>
+              <span id="selectionBadge" class="badge">Select one</span>
+            </div>
+
+            <div class="location-panel">
+              <div>
+                <p class="location-panel__label">Distance from you</p>
+                <p id="locationStatus" class="location-panel__status">
+                  Use location to sort nearby roads first.
+                </p>
+              </div>
+              <button id="locationButton" class="button button--secondary" type="button">
+                Use my location
+              </button>
+            </div>
+
+            <label class="search">
+              <span class="search__label">Search</span>
+              <input
+                id="searchInput"
+                type="search"
+                placeholder="Find by name, region, or tags"
+                autocomplete="off"
+              />
+            </label>
+
+            <div class="filter-row" role="group" aria-label="Completion filter">
+              <button class="chip is-active" data-filter="all">All</button>
+              <button class="chip" data-filter="done">Done</button>
+              <button class="chip" data-filter="todo">Not done</button>
+            </div>
+
+            <div id="trackList" class="track-list" aria-live="polite"></div>
+          </section>
+        </aside>
+
+        <section class="content">
+          <article id="detailCard" class="panel detail-card">
+            <div id="detailBody">
+              <div class="detail-media">
+                <iframe
+                  id="heroMapFrame"
+                  class="hero-map-frame"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  title="Route overview map"
+                ></iframe>
+                <div class="detail-overlay">
+                  <span id="detailDifficulty" class="badge badge--warm"></span>
+                  <span id="detailSeason" class="badge"></span>
+                </div>
+              </div>
+
+              <div class="detail-main">
+                <div class="detail-heading">
+                  <div>
+                    <p id="detailRegion" class="eyebrow"></p>
+                    <h2 id="detailName"></h2>
+                  </div>
+                  <div class="rating-pill">
+                    <span>User rating</span>
+                    <strong id="detailRating"></strong>
+                  </div>
+                </div>
+
+                <p id="detailDescription" class="detail-description"></p>
+
+                <div class="metrics" id="detailMetrics"></div>
+                <div class="tags" id="detailTags"></div>
+
+                <div class="action-grid">
+                  <button id="markDoneButton" class="button button--primary"></button>
+                  <button id="googleMapsButton" class="button button--secondary">
+                    Open in Google Maps
+                  </button>
+                  <button id="appleMapsButton" class="button button--secondary">
+                    Open in Apple Maps
+                  </button>
+                  <button id="shareTrackButton" class="button button--ghost">
+                    Share with friends
+                  </button>
+                </div>
+
+                <section class="subpanel">
+                  <div class="subpanel__header">
+                    <h3>Your rating</h3>
+                    <span id="personalRatingValue">Not rated yet</span>
+                  </div>
+                  <div
+                    id="ratingStars"
+                    class="stars"
+                    role="radiogroup"
+                    aria-label="Rate this road"
+                  ></div>
+                </section>
+
+                <section class="subpanel">
+                  <div class="subpanel__header">
+                    <h3>Mini map</h3>
+                    <a id="externalMapLink" target="_blank" rel="noreferrer">
+                      Open larger map
+                    </a>
+                  </div>
+                  <iframe
+                    id="mapFrame"
+                    class="map-frame"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title="Route map preview"
+                  ></iframe>
+                </section>
+
+                <section class="subpanel">
+                  <div class="subpanel__header">
+                    <h3>Safety notes</h3>
+                  </div>
+                  <ul id="hazardsList" class="hazards"></ul>
+                </section>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <template id="trackCardTemplate">
+      <button class="track-card" type="button">
+        <img class="track-card__image" alt="" />
+        <div class="track-card__content">
+          <div class="track-card__top">
+            <strong class="track-card__name"></strong>
+            <span class="track-card__rating"></span>
+          </div>
+          <p class="track-card__region"></p>
+          <div class="track-card__meta"></div>
+        </div>
+      </button>
+    </template>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
