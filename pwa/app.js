@@ -324,13 +324,14 @@ const tracks = [
   },
 ];
 
-const CURRENT_VERSION = "0.3.2";
+const CURRENT_VERSION = "0.3.3";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
 let installPrompt = null;
 let userLocation = null;
 let swRegistration = null;
+let isReloadingForUpdate = false;
 const sydneyReference = {
   name: "Sydney",
   latitude: -33.8688,
@@ -813,16 +814,11 @@ async function checkForUpdates() {
     setUpdateButtonState("available", remoteVersion);
 
     if (swRegistration) {
-      await swRegistration.update();
-
-      if (swRegistration.waiting) {
-        swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
-        window.location.reload();
-        return;
-      }
+      await applyServiceWorkerUpdate(swRegistration);
+      return;
     }
 
-    window.location.reload();
+    reloadWithCacheBust();
   } catch (error) {
     console.error("Update check failed", error);
     setUpdateButtonState("error");
@@ -832,6 +828,57 @@ async function checkForUpdates() {
       setUpdateButtonState("idle");
     }, 2200);
   }
+}
+
+async function applyServiceWorkerUpdate(registration) {
+  setUpdateButtonState("applying");
+  await registration.update();
+
+  if (registration.waiting) {
+    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    return;
+  }
+
+  if (registration.installing) {
+    await waitForWorkerState(registration.installing);
+
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      return;
+    }
+  }
+
+  reloadWithCacheBust();
+}
+
+function waitForWorkerState(worker) {
+  return new Promise((resolve, reject) => {
+    const handleStateChange = () => {
+      if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
+        worker.removeEventListener("statechange", handleStateChange);
+        resolve();
+      }
+    };
+
+    worker.addEventListener("statechange", handleStateChange);
+    handleStateChange();
+
+    window.setTimeout(() => {
+      worker.removeEventListener("statechange", handleStateChange);
+      reject(new Error("Timed out waiting for service worker update"));
+    }, 12000);
+  });
+}
+
+function reloadWithCacheBust() {
+  if (isReloadingForUpdate) {
+    return;
+  }
+
+  isReloadingForUpdate = true;
+  const refreshedUrl = new URL(window.location.href);
+  refreshedUrl.searchParams.set("updated", Date.now().toString());
+  window.location.replace(refreshedUrl.toString());
 }
 
 function setUpdateButtonState(state, remoteVersion = "") {
@@ -852,6 +899,12 @@ function setUpdateButtonState(state, remoteVersion = "") {
   if (state === "available") {
     elements.updateButtonLabel.textContent = "Update available";
     elements.updateButtonMeta.textContent = `New version: v${remoteVersion}`;
+    return;
+  }
+
+  if (state === "applying") {
+    elements.updateButtonLabel.textContent = "Applying update";
+    elements.updateButtonMeta.textContent = "Installing new version now";
     return;
   }
 
@@ -1075,7 +1128,7 @@ async function registerServiceWorker() {
   try {
     swRegistration = await navigator.serviceWorker.register("./sw.js");
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
+      reloadWithCacheBust();
     });
   } catch (error) {
     console.error("Service worker registration failed", error);
