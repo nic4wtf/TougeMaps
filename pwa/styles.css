@@ -382,6 +382,24 @@ button {
   overflow: hidden;
 }
 
+.track-card__personal-rating {
+  position: absolute;
+  inset: 8px auto auto 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  color: #fff5ef;
+  border: 1px solid rgba(255, 214, 194, 0.24);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(191, 70, 36, 0.92), rgba(129, 41, 19, 0.94));
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  box-shadow: 0 10px 22px rgba(40, 12, 8, 0.3);
+  z-index: 2;
+}
+
 .track-card__image-wrap.is-done::after {
   content: "";
   position: absolute;
@@ -665,6 +683,40 @@ button {
   border-radius: 16px;
 }
 
+.track-inline-detail {
+  display: grid;
+  gap: 14px;
+  margin-top: -2px;
+  margin-bottom: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 214, 194, 0.1);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(79, 30, 22, 0.9), rgba(33, 14, 11, 0.94));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+}
+
+.track-inline-detail__header,
+.track-inline-detail__metrics,
+.track-inline-detail__tags,
+.track-inline-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.track-inline-detail__description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.track-inline-detail__rating,
+.track-inline-detail__hazards {
+  display: grid;
+  gap: 10px;
+}
+
 @media (min-width: 920px) {
   .hero {
     grid-template-columns: 1.35fr 0.8fr;
@@ -698,6 +750,10 @@ button {
   .app-shell {
     width: min(100% - 16px, 1320px);
     padding-top: 12px;
+  }
+
+  .content {
+    display: none;
   }
 
   .hero,

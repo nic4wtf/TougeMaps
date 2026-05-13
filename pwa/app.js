@@ -324,7 +324,7 @@ const tracks = [
   },
 ];
 
-const CURRENT_VERSION = "0.3.1";
+const CURRENT_VERSION = "0.3.2";
 const storageKey = "tougemaps-pwa-state-v1";
 const defaultState = { selectedTrackId: tracks[0].id, done: {}, ratings: {} };
 let appState = loadState();
@@ -471,6 +471,7 @@ function renderTrackList() {
     const card = fragment.querySelector(".track-card");
     const image = fragment.querySelector(".track-card__image");
     const imageWrap = fragment.querySelector(".track-card__image-wrap");
+    const personalRatingBadge = fragment.querySelector(".track-card__personal-rating");
     const doneBadge = fragment.querySelector(".track-card__done-badge");
     const name = fragment.querySelector(".track-card__name");
     const rating = fragment.querySelector(".track-card__rating");
@@ -484,6 +485,9 @@ function renderTrackList() {
     region.textContent = track.region;
     meta.innerHTML = "";
     const isDone = Boolean(appState.done[track.id]);
+    const personalRating = appState.ratings[track.id];
+    personalRatingBadge.hidden = !personalRating;
+    personalRatingBadge.textContent = personalRating ? `Rate ${personalRating}/5` : "";
     doneBadge.hidden = !isDone;
     card.classList.toggle("is-done", isDone);
     imageWrap.classList.toggle("is-done", isDone);
@@ -505,16 +509,28 @@ function renderTrackList() {
     }
 
     card.addEventListener("click", () => {
-      appState.selectedTrackId = track.id;
+      if (isMobileLayout() && appState.selectedTrackId === track.id) {
+        appState.selectedTrackId = null;
+      } else {
+        appState.selectedTrackId = track.id;
+      }
       saveState();
       render();
     });
 
     elements.trackList.append(fragment);
+
+    if (isMobileLayout() && appState.selectedTrackId === track.id) {
+      elements.trackList.append(buildMobileTrackDetails(track));
+    }
   });
 }
 
 function renderDetail() {
+  if (isMobileLayout()) {
+    return;
+  }
+
   const track = getSelectedTrack();
   elements.detailBody.classList.add("detail-body");
   elements.selectionBadge.textContent = track.name;
@@ -632,12 +648,104 @@ function toggleDone() {
   render();
 }
 
+function buildMobileTrackDetails(track) {
+  const wrapper = document.createElement("article");
+  wrapper.className = "track-inline-detail";
+
+  const isDone = Boolean(appState.done[track.id]);
+  const personalRating = appState.ratings[track.id];
+
+  wrapper.innerHTML = `
+    <div class="track-inline-detail__header">
+      <span class="badge badge--warm">${track.difficulty}</span>
+      <span class="badge">${getDistanceLabel(track)} away</span>
+    </div>
+    <p class="track-inline-detail__description">${track.description}</p>
+    <div class="track-inline-detail__metrics">
+      <span class="metric"><span>Length</span><strong>${track.lengthKm} km</strong></span>
+      <span class="metric"><span>Gain</span><strong>${track.elevationGainM} m</strong></span>
+      <span class="metric"><span>Season</span><strong>${track.bestSeason}</strong></span>
+    </div>
+    <div class="track-inline-detail__tags">${track.tags
+      .map((tag) => `<span class="tag">${tag}</span>`)
+      .join("")}</div>
+    <div class="track-inline-detail__actions">
+      <button class="button ${isDone ? "button--complete" : "button--primary"}" data-action="done">${isDone ? "Mark as not done" : "Mark as done"}</button>
+      <button class="button button--secondary" data-action="google">Google Maps</button>
+      <button class="button button--secondary" data-action="apple">Apple Maps</button>
+      <button class="button button--ghost" data-action="share">Share</button>
+    </div>
+    <section class="track-inline-detail__rating">
+      <div class="subpanel__header">
+        <h3>Your rating</h3>
+        <span>${personalRating ? `${personalRating} / 5` : "Not rated yet"}</span>
+      </div>
+      <div class="stars" data-role="inline-stars"></div>
+    </section>
+    <section class="track-inline-detail__hazards">
+      <div class="subpanel__header">
+        <h3>Hazards</h3>
+      </div>
+      <ul class="hazards">${track.hazards.map((hazard) => `<li>${hazard}</li>`).join("")}</ul>
+    </section>
+  `;
+
+  const starsContainer = wrapper.querySelector('[data-role="inline-stars"]');
+  for (let rating = 1; rating <= 5; rating += 1) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "star-button";
+    button.setAttribute("aria-label", `Rate ${rating} out of 5`);
+    button.innerHTML = personalRating && rating <= personalRating ? "&#9733;" : "&#9734;";
+
+    if (personalRating && rating <= personalRating) {
+      button.classList.add("is-active");
+    }
+
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (appState.ratings[track.id] === rating) {
+        delete appState.ratings[track.id];
+      } else {
+        appState.ratings[track.id] = rating;
+      }
+      saveState();
+      render();
+    });
+
+    starsContainer.append(button);
+  }
+
+  wrapper.querySelector('[data-action="done"]').addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleDoneForTrack(track.id);
+  });
+  wrapper.querySelector('[data-action="google"]').addEventListener("click", (event) => {
+    event.stopPropagation();
+    openExternal(buildGoogleMapsLink(track));
+  });
+  wrapper.querySelector('[data-action="apple"]').addEventListener("click", (event) => {
+    event.stopPropagation();
+    openExternal(buildAppleMapsLink(track));
+  });
+  wrapper.querySelector('[data-action="share"]').addEventListener("click", async (event) => {
+    event.stopPropagation();
+    await shareTrack(track);
+  });
+
+  return wrapper;
+}
+
 async function shareSelectedTrack() {
   const track = getSelectedTrack();
   if (!track) {
     return;
   }
 
+  await shareTrack(track);
+}
+
+async function shareTrack(track) {
   const shareData = {
     title: `${track.name} on TougeMaps`,
     text: `Check out ${track.name} in ${track.region}.`,
@@ -788,7 +896,22 @@ function requestUserLocation() {
 }
 
 function getSelectedTrack() {
-  return tracks.find((track) => track.id === appState.selectedTrackId) ?? null;
+  return (
+    tracks.find((track) => track.id === appState.selectedTrackId) ??
+    tracks[0] ??
+    null
+  );
+}
+
+function toggleDoneForTrack(trackId) {
+  if (appState.done[trackId]) {
+    delete appState.done[trackId];
+  } else {
+    appState.done[trackId] = true;
+  }
+
+  saveState();
+  render();
 }
 
 function loadState() {
@@ -897,6 +1020,10 @@ function escapeXml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
+}
+
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 919px)").matches;
 }
 
 function sortTracksByDistance(trackList) {
